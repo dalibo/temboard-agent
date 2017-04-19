@@ -10,7 +10,7 @@ clean:
 # bash. Now edit entrypoint.sh and just call it as docker-entrypoint.sh inside
 # the container to test it.
 dev:
-	docker-compose -f ../docker-compose.yml -f ./docker-compose.dev.yml up
+	docker-compose -f ../docker-compose.yml -f ./docker-compose.dev.yml up -d
 
 push:
 	docker push $(NAME)
