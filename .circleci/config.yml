@@ -74,7 +74,7 @@ jobs:
     - run:
         name: Execute the tests
         command: |
-          docker-compose -f test/legacy/docker-compose.yml up --abort-on-container-exit
+          TBD_INSTALL_RPM=1 docker-compose -f test/legacy/docker-compose.yml up --abort-on-container-exit
 
 
 workflows:
