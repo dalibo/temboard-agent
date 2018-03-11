@@ -1,8 +1,7 @@
 import logging
 import os
-import sys
 import imp
-import time
+import signal
 
 from temboardagent.spc import connector
 
@@ -25,31 +24,30 @@ def load_plugins_configurations(config):
     # PostgreSQL version
     pg_version = 0
 
-    while pg_version == 0:
+    try:
+        conn = connector(
+            host=config.postgresql['host'],
+            port=config.postgresql['port'],
+            user=config.postgresql['user'],
+            password=config.postgresql['password'],
+            database=config.postgresql['dbname']
+        )
+        """ Trying to get PostgreSQL version number. """
+        conn.connect()
+        pg_version = conn.get_pg_version()
+        conn.close()
+    except Exception as e:
+        logger.exception(e)
+        logger.error("Not able to get PostgreSQL version number.")
         try:
-            conn = connector(
-                host=config.postgresql['host'],
-                port=config.postgresql['port'],
-                user=config.postgresql['user'],
-                password=config.postgresql['password'],
-                database=config.postgresql['dbname']
-            )
-            """ Trying to get PostgreSQL version number. """
-            conn.connect()
-            pg_version = conn.get_pg_version()
             conn.close()
-        except Exception as e:
-            logger.exception(str(e))
-            logger.error("Not able to get PostgreSQL version number.")
-            try:
-                conn.close()
-            except Exception:
-                pass
+        except Exception:
+            pass
 
+    if pg_version == 0:
         # If we reach this point, PostgreSQL is not available, so we
-        # wait 5 seconds and try again
-        if pg_version == 0:
-            time.sleep(5)
+        # send HUP signal to trigger a new try in 1 second.
+        os.kill(os.getpid(), signal.SIGHUP)
 
     # Loop through each plugin listed in the configuration file.
     for plugin_name in config.temboard['plugins']:
@@ -66,7 +64,8 @@ def load_plugins_configurations(config):
                                             desc_s)
             # Check modules's PG_MIN_VERSION
             try:
-                if (module_compat.PG_MIN_VERSION > pg_version):
+                if (pg_version > 0 and
+                        module_compat.PG_MIN_VERSION > pg_version):
                     # Version not supported
                     logger.error("PostgreSQL version (%s) is not supported "
                                  "(min:%s)." % (pg_version,

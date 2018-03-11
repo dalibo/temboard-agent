@@ -90,6 +90,10 @@ def list_options_specs():
 
 @cli
 def main(argv, environ):
+    # Setup SIGHUP signal handler early if we need to retry to load
+    # configuration
+    signal.signal(signal.SIGHUP, httpd_sighup_handler)
+
     parser = ArgumentParser(
         prog='temboard-agent',
         description="temBoard agent.",
@@ -128,11 +132,16 @@ def main(argv, environ):
                                        '.tm.task_list')),
             address=str(tm_sock_path)
          )
-    # copy configuration into context as a dict
-    tm.set_context('config', {'plugins': config.plugins.__dict__.get('data'),
-                              'temboard': config.temboard.__dict__.get('data'),
-                              'postgresql': config.postgresql.__dict__.get('data'),
-                              'logging': config.logging.__dict__.get('data')})
+    # Copy configuration into TM context as a dict
+    tm.set_context(
+        'config',
+        {
+            'plugins': config.plugins.__dict__.get('data'),
+            'temboard': config.temboard.__dict__.get('data'),
+            'postgresql': config.postgresql.__dict__.get('data'),
+            'logging': config.logging.__dict__.get('data')
+        }
+    )
     tm.start()
 
     # Add signal handlers on SIGTERM and SIGHUP.
@@ -140,8 +149,7 @@ def main(argv, environ):
     signal.signal(signal.SIGHUP, httpd_sighup_handler)
 
     # Serve HTTPS forever.
-    httpd_run(config, sessions)
-
+    httpd_run(config, sessions, tm_address=str(tm_sock_path))
     return 0
 
 
