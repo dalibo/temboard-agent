@@ -1,13 +1,13 @@
 import sys
 import os
 import atexit
-import signal
 import time
 
 # Some global vars we need to have because signal handler function can't take
 # extra parameters.
 PIDFILE = None
 RELOAD = False
+LASTRELOAD = 0
 
 
 def set_global_reload(value):
@@ -15,8 +15,13 @@ def set_global_reload(value):
     RELOAD = value
 
 
+def set_last_reload(value):
+    global LASTRELOAD
+    LASTRELOAD = value
+
+
 def reload_true():
-    return RELOAD
+    return (RELOAD & (int(time.time() * 1000) > (LASTRELOAD + 1000)))
 
 
 def httpd_sighup_handler(signum, frame):
@@ -24,6 +29,7 @@ def httpd_sighup_handler(signum, frame):
     SIGHUP handler for httpd process.
     """
     set_global_reload(True)
+    set_last_reload(int(time.time() * 1000))
 
 
 def httpd_sigterm_handler(signum, frame):
@@ -102,9 +108,9 @@ def daemonize(pidfile):
     # Redirect standard file descriptors.
     sys.stdout.flush()
     sys.stderr.flush()
-    si = file('/dev/null', 'r')
-    so = file('/dev/null', 'a+')
-    se = file('/dev/null', 'a+', 0)
+    si = open('/dev/null', 'r')
+    so = open('/dev/null', 'a+')
+    se = open('/dev/null', 'a+', 0)
     os.dup2(si.fileno(), sys.stdin.fileno())
     os.dup2(so.fileno(), sys.stdout.fileno())
     os.dup2(se.fileno(), sys.stderr.fileno())

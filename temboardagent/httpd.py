@@ -12,9 +12,10 @@ import json
 import sys
 from urllib import unquote_plus
 import ssl
+from temboardsched import taskmanager
 
 from temboardagent.routing import get_routes
-from temboardagent.errors import HTTPError, ConfigurationError
+from temboardagent.errors import HTTPError
 from temboardagent.daemon import set_global_reload, reload_true
 from temboardagent import __version__ as temboard_version
 
@@ -193,7 +194,7 @@ def handleRequestsUsing(config, sessions):
     return lambda *args: RequestHandler(config, sessions, *args)
 
 
-def httpd_run(config, sessions):
+def httpd_run(config, sessions, tm_address):
     """
     Serve HTTP for ever and reload configuration from the conf file on SIGHUP
     signal catch.
@@ -215,11 +216,22 @@ def httpd_run(config, sessions):
             # SIGHUP caught
             # Try to load configuration from the configuration file.
             try:
+                # Reset the global var indicating a SIGHUP signal.
+                set_global_reload(False)
                 logger.info("SIGHUP signal caught, trying to reload "
                             "configuration.")
                 config = config.reload()
-            except (ConfigurationError, ImportError) as e:
-                logger.exception(str(e))
+                # update configuration for the workers
+                taskmanager.set_context(
+                    'config',
+                    {'plugins': config.plugins.__dict__.get('data'),
+                     'temboard': config.plugins.__dict__.get('temboard'),
+                     'postgresql': config.plugins.__dict__.get('postgresql'),
+                     'logging': config.plugins.__dict__.get('logging')},
+                    listener_addr=tm_address,
+                )
+            except Exception as e:
+                logger.exception(e)
                 logger.info("Keeping previous configuration.")
                 config.setup_logging()
             else:
@@ -229,9 +241,6 @@ def httpd_run(config, sessions):
                 httpd.RequestHandlerClass = handleRequestsUsing(config,
                                                                 sessions)
                 logger.info("Done.")
-
-            # Reset the global var indicating a SIGHUP signal.
-            set_global_reload(False)
 
         # Purge expired sessions if any.
         sessions.purge_expired(3600, logger, config)
