@@ -809,8 +809,7 @@ def dashboard_worker_sigterm_handler(signum, frame):
     sys.exit(1)
 
 
-@taskmanager.worker(pool_size=1)
-def dashboard_collector_worker(config):
+def collect_data(config):
     try:
         signal.signal(signal.SIGTERM, dashboard_worker_sigterm_handler)
         logger.debug("Collecting data")
@@ -856,9 +855,28 @@ def dashboard_collector_worker(config):
         sys.exit(1)
 
 
+@taskmanager.worker(pool_size=1)
+def dashboard_collector_worker(config):
+    collect_data(config)
+
+
 @taskmanager.bootstrap()
 def dashboard_collector_bootstrap(context):
     config = context.get('config')
+
+    max_length = config['plugins']['dashboard']['history_length'] + 1
+    q = Queue('%s/dashboard.q' % (config['temboard']['home']),
+              max_length=max_length,
+              overflow_mode='slide')
+
+    # collect the data once
+    collect_data(config)
+
+    # then fill the queue with this data
+    last_message = q.get_last_message()
+    for i in range(max_length):
+        q.push(Message(content=json.dumps(last_message)))
+
     yield taskmanager.Task(
             worker_name='dashboard_collector_worker',
             id='dashboard_collector',
