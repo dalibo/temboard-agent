@@ -99,17 +99,19 @@ def main(argv, environ):
     if os.path.exists(tm_sock_path):
         os.unlink(tm_sock_path)
 
-    tm = taskmanager.TaskManager(
+    app.taskmanager = taskmanager.TaskManager(
             task_path=str(os.path.join(config.temboard['home'],
                                        '.tm.task_list')),
             address=str(tm_sock_path)
          )
     # copy configuration into context as a dict
-    tm.set_context('config', {'plugins': config.plugins.__dict__.get('data'),
-                              'temboard': config.temboard.__dict__.get('data'),
-                              'postgresql': config.postgresql.__dict__.get('data'),
-                              'logging': config.logging.__dict__.get('data')})
-    tm.start()
+    app.taskmanager.set_context('config', {
+        'plugins': config.plugins.__dict__.get('data'),
+        'temboard': config.temboard.__dict__.get('data'),
+        'postgresql': config.postgresql.__dict__.get('data'),
+        'logging': config.logging.__dict__.get('data')
+    })
+    app.taskmanager.start()
 
     # Add signal handlers on SIGTERM and SIGHUP.
     signal.signal(signal.SIGTERM, httpd_sigterm_handler)

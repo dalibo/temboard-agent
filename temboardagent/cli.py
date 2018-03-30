@@ -66,6 +66,7 @@ class Application(object):
         # This dict stores env, args and parser for hot reloading of
         # configuration.
         self.config_sources = dict()
+        self.taskmanager = None
 
     def __repr__(self):
         return '<%s>' % (self.__class__.__name__)
