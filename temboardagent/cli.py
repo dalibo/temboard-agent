@@ -66,6 +66,7 @@ class Application(object):
         # This dict stores env, args and parser for hot reloading of
         # configuration.
         self.config_sources = dict()
+        self.taskmanager = None
 
     def __repr__(self):
         return '<%s>' % (self.__class__.__name__)
@@ -236,6 +237,20 @@ class Application(object):
 
         self.apply_config()
         logger.info("Configuration reloaded.")
+
+        if self.taskmanager:
+            logger.warn("Reflecting configuration updates to Taskmanager.")
+            self.taskmanager.set_context('config', {
+                'plugins': self.config.plugins.__dict__.get('data'),
+                'temboard': self.config.temboard.__dict__.get('data'),
+                'postgresql': self.config.postgresql.__dict__.get('data'),
+                'logging': self.config.logging.__dict__.get('data')
+            })
+            logger.info("Taskmanager configuration updated.")
+            logger.warn("Restarting Taskmanager.")
+            self.taskmanager.restart()
+            logger.info("Taskmanager restarted.")
+
         return self
 
     def setup_logging(self):
