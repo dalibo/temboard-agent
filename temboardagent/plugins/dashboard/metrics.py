@@ -19,7 +19,7 @@ def get_metrics(conn, config, _=None):
 
     return {'buffers': dm.get_buffers(),
             'hitratio': dm.get_hitratio(),
-            'active_backends': dm.get_active_backends(),
+            'foo': dm.get_active_backends(),
             'max_connections': dm.get_max_connections(),
             'cpu': dm.get_cpu_usage(),
             'loadaverage': dm.get_load_average(),
