@@ -48,8 +48,8 @@ SETUP_KWARGS = dict(
             'share/users',
         ]),
         ('lib/systemd/system', [
-            'deb/temboard-agent.service',
-            'deb/temboard-agent@.service',
+            'packaging/deb/temboard-agent.service',
+            'packaging/temboard-agent@.service',
         ]),
     ],
     entry_points={

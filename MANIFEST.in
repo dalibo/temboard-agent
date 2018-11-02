@@ -1,3 +1,4 @@
 include apidoc.json LICENSE README.rst
 graft share
-include deb/temboard-agent.service deb/temboard-agent@.service
+include packaging/temboard-agent@.service
+include packaging/deb/temboard-agent.service
