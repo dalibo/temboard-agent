@@ -26,7 +26,7 @@ versions=($(pep440deb --echo --pypi temboard-agent))
 pep440v=${versions[0]}
 debianv=${versions[1]}
 
-pip install --pre --root $DESTDIR --no-deps --prefix /usr temboard-agent==$pep440v
+pip2 install --pre --root $DESTDIR --no-deps --prefix /usr temboard-agent==$pep440v
 # Dirty fake of --install-layout=deb. This is required for wheezy and jessie
 # where PYTHONPATH does not include site-packages, but only dist-packages.
 mv $DESTDIR/usr/lib/python2.7/{site,dist}-packages/
