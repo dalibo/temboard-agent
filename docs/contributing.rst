@@ -50,7 +50,11 @@ Releasing
 =========
 
 Releasing a new version of temBoard agent requires write access to master on
-main repository, PyPI project and Docker Hub repository.
+`main repository <https://github.com/dalibo/temboard-agent>`_, `PyPI project
+<https://pypi.org/project/temboard-agent>`_ and `Docker Hub repository
+<https://hub.docker.com/r/dalibo/temboard-agent>`_.
+
+For the tooling, you need Git 1.8+, a recent setuptools with wheel, and twine.
 
 Please follow these steps:
 
