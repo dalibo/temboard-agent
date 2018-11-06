@@ -1,19 +1,24 @@
+$(info Reading current version)
 VERSION=$(shell python2 setup.py --version)
+BRANCH?=v$(firstword $(subst ., ,$(VERSION)))
+GIT_REMOTE?=git@github.com:dalibo/temboard-agent.git
 
 all:
 	@echo Working on temboard-agent $(VERSION)
 
 release:
-	python2 setup.py egg_info
-	git commit setup.py -m "Version $(VERSION)"
-	git tag $(VERSION)
-	git push git@github.com:dalibo/temboard-agent.git
-	git push --tags git@github.com:dalibo/temboard-agent.git
+	@echo Checking we are on branch $(BRANCH).
+	git rev-parse --abbrev-ref HEAD | grep -q '^$(BRANCH)$$'
+	python setup.py egg_info
+	git commit temboardagent/version.py -m "Version $(VERSION)"
+	git tag --annotate --message "Version $(VERSION)" $(VERSION)
+	git push --follow-tags $(GIT_REMOTE) refs/heads/$(BRANCH):refs/heads/$(BRANCH)
 
 upload:
 	@echo Checking we are on a tag
 	git describe --exact-match --tags
-	python2 setup.py sdist bdist_wheel upload -r pypi
+	python setup.py sdist bdist_wheel --universal
+	twine upload dist/temboard-agent-$(VERSION).tar.gz $$(ls dist/temboard_agent-$(VERSION)-*.whl)
 
 shell:
 	docker-compose exec agent bash
