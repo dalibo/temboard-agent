@@ -54,6 +54,7 @@ main repository, PyPI project and Docker Hub repository.
 
 Please follow these steps:
 
+- Checkout the release branch, e.g. v2.
 - Choose the next version according to `PEP 440
   <https://www.python.org/dev/peps/pep-0440/#version-scheme>`_ .
 - Update ``setup.py``, without committing.
