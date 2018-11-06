@@ -57,7 +57,7 @@ Please follow these steps:
 - Checkout the release branch, e.g. v2.
 - Choose the next version according to `PEP 440
   <https://www.python.org/dev/peps/pep-0440/#version-scheme>`_ .
-- Update ``setup.py``, without committing.
+- Update ``temboardagent/version.py``, without committing.
 - Generate commit and tag with ``make release``.
 - Push Python egg to PyPI using ``make upload``.
 - Trigger docker master build from
