@@ -39,18 +39,24 @@ Sphinx generates temBoard agent documentation.
 
 .. code-block:: console
 
-   $ cd doc/
+   $ cd docs/
    $ pip install -r requirements-doc.txt
-   $ make html
+   $ make watch
 
-temBoard agent documentation is at ``_build/html/``.
+Now run ``make serve`` in another terminal and point your web browser at
+http://0.0.0.0:8000/. There is no auto-refresh.
 
 
 Releasing
 =========
 
 Releasing a new version of temBoard agent requires write access to master on
-main repository, PyPI project and Docker Hub repository.
+`main repository <https://github.com/dalibo/temboard-agent>`_, `PyPI project
+<https://pypi.org/project/temboard-agent>`_ and `Docker Hub repository
+<https://hub.docker.com/r/dalibo/temboard-agent>`_.
+
+For the tooling, you need Git 1.8+, a recent setuptools with wheel, and twine.
+For debian packaging, see below.
 
 Please follow these steps:
 
@@ -60,5 +66,15 @@ Please follow these steps:
 - Update ``temboardagent/version.py``, without committing.
 - Generate commit and tag with ``make release``.
 - Push Python egg to PyPI using ``make upload``.
+- Build and push debian packages using ``make -C packaging/deb all push``.
 - Trigger docker master build from
   https://hub.docker.com/r/dalibo/temboard-agent/~/settings/automated-builds/.
+
+
+Other documentation for maintainers
+===================================
+
+.. toctree::
+   :maxdepth: 1
+
+   packaging-deb
