@@ -38,6 +38,7 @@ SETUP_KWARGS = dict(
             'share/temboard-agent.conf',
             'share/temboard-agent.logrotate',
             'share/auto_configure.sh',
+            'share/restart-all.sh',
         ]),
         ('share/temboard-agent/quickstart/', [
             'share/temboard-agent.conf',
@@ -48,8 +49,8 @@ SETUP_KWARGS = dict(
             'share/users',
         ]),
         ('lib/systemd/system', [
-            'deb/temboard-agent.service',
-            'deb/temboard-agent@.service',
+            'packaging/deb/temboard-agent.service',
+            'packaging/temboard-agent@.service',
         ]),
     ],
     entry_points={
