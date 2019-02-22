@@ -260,7 +260,9 @@ ON x.indexrelid = psai.indexrelid
 JOIN pg_am am
 ON am.oid = c.relam
 JOIN (
+    WITH qq AS (
     """ + INDEX_BTREE_BLOAT_SQL + """
+    ) SELECT * FROM qq
 ) AS ibloat
 ON ibloat.schemaname = i.schemaname AND ibloat.tblname = i.tablename AND ibloat.idxname = i.indexname
 WHERE i.schemaname = '{schema}'
