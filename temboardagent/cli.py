@@ -29,6 +29,7 @@ class Application(BaseApplication):
         "monitoring",
         "pgconf",
         "maintenance",
+        "slowqueries",
     ]
 
     def core_specs(self):
