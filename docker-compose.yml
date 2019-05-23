@@ -29,7 +29,9 @@ services:
       com.dnsdock.alias: ui.tba.docker
 
   instance:
-    image: postgres:10-alpine
+    build:
+      context: .
+      dockerfile: ./docker-dev/Dockerfile.instance
     volumes:
       - data:/var/lib/postgresql/data
       - run:/var/run/postgresql
