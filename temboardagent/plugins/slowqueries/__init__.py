@@ -27,6 +27,23 @@ def get_slow_queries_reset(http_context, app):
     return {'ok': 'done'}
 
 
+@routes.post(b'/explain', check_key=True)
+def post_explain_query(http_context, app):
+    sql = http_context['post']['sql']
+    format = http_context['post'].get('format', 'text').upper()
+
+    with app.postgres.connect() as conn:
+        conn.begin()
+        query = """EXPLAIN (ANALYZE, COSTS, VERBOSE, BUFFERS, FORMAT %s)
+                   %s;""" % (format, sql)
+
+        conn.execute(query)
+        rows = list(conn.get_rows())
+        conn.rollback()
+
+    return rows[0]['QUERY PLAN']
+
+
 @routes.get(b'/settings')
 def get_pg_conf(http_context, app):
     # Allow change of pg_track_slow_queries only
