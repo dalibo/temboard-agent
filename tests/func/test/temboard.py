@@ -263,6 +263,7 @@ def build_env_dict():
                 "administration",
                 "activity",
                 "maintenance",
+                "statements",
             ]),
         },
         'pg': {
