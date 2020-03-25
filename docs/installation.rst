@@ -9,13 +9,18 @@ you may want to use trusted certificate and other enhancement.
 Prerequisites
 =============
 
-In order to run temBoard agent, you require:
+In order to run temBoard agent, you need:
 
-- PostgreSQL 9.4+, listening on UNIX socket, on the same host. Check with ``sudo -u postgres psql``.
+- Linux as underlying OS.
+- PostgreSQL 9.4+, listening on UNIX socket. Check with ``sudo -u postgres psql``.
 - openssl.
 - Python 2.6+ or 3.5+. Check with ``python --version``.
 - A running temBoard UI.
-- bash and sudo for setup script.
+- bash, curl and sudo for setup script.
+
+.. note::
+
+  The temBoard agent must run on the same host as the PostgreSQL instance. Running an agent on a remote host is not yet supported.
 
 
 Now choose the method matching best your target environment.
@@ -173,21 +178,28 @@ as single required argument.
 
 The script shows you some important information for the next steps:
 
-- the path to the main configuration file like
-  ``/etc/temboard-agent/11/main/temboard-agent.conf``.
-- TCP port like 2345.
+- the path to the main agent configuration file like
+  ``/etc/temboard-agent/11/main/temboard-agent.conf``
+
+.. note::
+
+  Some parts of the
+  configuration are in ``/etc/temboard-agent/11/main/temboard-agent.conf.d/auto.conf``
+  too and override the main configuration file.
+
+- agent TCP port (usually 2345 if this is your first agent on this host)
 - secret key for registration like ``d52cb5d39d265f03ae570e1847b90e10``.
 
-You will need these information later. Keep them near. Now add a first user
-using ``temboard-agent-adduser``:
+You will need these information later. Keep them near. Now create a first user
+(specific to this agent) using ``temboard-agent-adduser``.
+Later, once the agent is registered, you will need to authenticate against
+the agent with this user from the UI to interact with the agent.
 
 .. code-block:: console
 
    # sudo -u postgres temboard-agent-adduser -c /etc/temboard-agent/11/main/temboard-agent.conf
 
-Adapt the configuration file to match the one created by ``auto_configure.sh``.
-Later, once the agent is registered, you will need to authenticate against
-the agent with this user, right from the UI.
+Adapt the configuration file name to match the one created by ``auto_configure.sh``.
 
 Now start the agent using the command suggested by ``auto_configure.sh``. On
 most systems now, it's a systemd service:
@@ -196,16 +208,25 @@ most systems now, it's a systemd service:
 
    # systemctl start temboard-agent@11-main
 
-Now you can register the agent in the UI using ``temboard-agent-register``:
+Check that it has started successfully:
 
 .. code-block:: console
 
-   # sudo -u postgres temboard-agent-register -c /etc/temboard-agent/11/main/temboard-agent.conf --host $(hostname --fqdn) --port 2345 --groups default https://temboard-ui.lan:8888
+   # systemctl status temboard-agent@11-main
 
-Don't forget to adapt this command line to your case. Configuration file, port
-and temBoard UI address are likely to change from one installation to another.
+Now you can register the agent in the UI using ``temboard-agent-register``.
+It needs the configuration file path, the agent host and port and the path
+to the temBoard UI.:
+
+.. code-block:: console
+
+   # sudo -u postgres temboard-agent-register -c /etc/temboard-agent/11/main/temboard-agent.conf --groups default https://temboard-ui.lan:8888
+
+Don't forget to adapt this command line to your case. Configuration file and
+temBoard UI address are likely to change from one installation to another.
 ``temboard-agent-register`` will ask you to login to the UI. Beware, it is
-**NOT** the user on the agent.
+**NOT** the user on the agent, it is an administrator account on temBoard
+UI. The default agent user is ``admin``.
 
 
 It's up!

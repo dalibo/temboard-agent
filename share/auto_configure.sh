@@ -6,10 +6,8 @@
 # default, the script configure an agent for the running cluster on port 5432,
 # using postgres UNIX and PostgreSQL user.
 #
-# The agent is running on a port computed by reversing Postgres port. e.g. 5432
-# generates 2345, 5433 generates 3345, etc.
-#
-# Each agent has its own user file. This file is emptied by the script.
+# The agent is running on the first free port starting from 2345. Each agent has
+# its own user file. This file is emptied by the script.
 
 
 set -o pipefail
@@ -37,9 +35,19 @@ query_pgsettings() {
 
 	local name=$1; shift
 	local default=${1-}; shift
-	val=$(sudo -Eu ${PGUSER} psql -Atc "SELECT setting FROM pg_settings WHERE name = '${name}';")
+	val=$(sudo -Eu ${SYSUSER} psql -Atc "SELECT setting FROM pg_settings WHERE name = '${name}';")
 
 	echo "${val:-${default}}"
+}
+
+find_next_free_port() {
+	local used=($(ss -ln4t '( sport >= 2345 and sport <= 3000 )' | grep -Po ':\K\d+'))
+	used="${used[*]}"
+	for port in {2345..3000} ; do
+		if [[ " $used " =~ " $port " ]] ; then continue ; fi
+		echo $port;
+		break
+	done
 }
 
 generate_configuration() {
@@ -56,7 +64,7 @@ generate_configuration() {
 	local logfile=$1; shift
 	local collector_url=$1; shift
 
-	local port=$(echo $PGPORT | rev)
+	local port=${TEMBOARD_PORT-$(find_next_free_port)}
 	log "Configuring temboard-agent to run on port ${port}."
 	local pg_ctl=$(which pg_ctl)
 
@@ -111,13 +119,13 @@ setup_pq() {
 	# Ensure used libpq vars are defined for configuration template.
 
 	export PGUSER=${PGUSER-postgres}
-	log "Configuring for user ${PGUSER}."
+	log "Configuring for PostgreSQL user ${PGUSER}."
 	export PGDATABASE=${PGDATABASE-${PGUSER}}
 	export PGPORT=${PGPORT-5432}
 	log "Configuring for cluster on port ${PGPORT}."
 	export PGHOST=${PGHOST-$(query_pgsettings unix_socket_directories)}
 	PGHOST=${PGHOST%%,*}
-	if ! sudo -Eu ${PGUSER} psql -tc "SELECT 'Postgres connection working.';" ; then
+	if ! sudo -Eu ${SYSUSER} psql -tc "SELECT 'Postgres connection working.';" ; then
 		fatal "Can't connect to Postgres cluster."
 	fi
 	export PGDATA=$(query_pgsettings data_directory)
@@ -133,7 +141,7 @@ setup_pq() {
 	# Instance name defaults to cluster_name. If unset (e.g. Postgres 9.4),
 	# use the tail of ${PGDATA} after ~postgres has been removed. If PGDATA
 	# is not in postgres home, compute a cluster name from version and port.
-	local home=$(eval readlink -e ~${PGUSER})
+	local home=$(eval readlink -e ~${SYSUSER})
 	if [ -z "${PGDATA##${home}/*}" ] ; then
 		default_cluster_name=${PGDATA##${home}/}
 	else
@@ -186,6 +194,7 @@ cd $(readlink -m ${BASH_SOURCE[0]}/..)
 ETCDIR=${ETCDIR-/etc/temboard-agent}
 VARDIR=${VARDIR-/var/lib/temboard-agent}
 LOGDIR=${LOGDIR-/var/log/temboard-agent}
+SYSUSER=${SYSUSER-postgres}
 
 export TEMBOARD_HOSTNAME=${TEMBOARD_HOSTNAME-$(hostname --fqdn)}
 if [ -n "${TEMBOARD_HOSTNAME##*.*}" ] ; then
@@ -208,14 +217,14 @@ setup_pq
 name=${PGCLUSTER_NAME}
 home=${VARDIR}/${name}
 # Create directories
-install -o ${PGUSER} -g ${PGUSER} -m 0750 -d \
+install -o ${SYSUSER} -g ${SYSUSER} -m 0750 -d \
 	${ETCDIR}/${name}/temboard-agent.conf.d/ \
 	${LOGDIR} ${home}
 
 # Start with default configuration
 log "Configuring temboard-agent in ${ETCDIR}/${name}/temboard-agent.conf ."
-install -o ${PGUSER} -g ${PGUSER} -m 0640 temboard-agent.conf ${ETCDIR}/${name}/
-install -b -o ${PGUSER} -g ${PGUSER} -m 0600 /dev/null ${ETCDIR}/${name}/users
+install -o ${SYSUSER} -g ${SYSUSER} -m 0640 temboard-agent.conf ${ETCDIR}/${name}/
+install -b -o ${SYSUSER} -g ${SYSUSER} -m 0600 /dev/null ${ETCDIR}/${name}/users
 if ! [ -f /etc/logrotate.d/temboard-agent ] ; then
 	install -d -m 0755 /etc/logrotate.d
 	install -m 644 temboard-agent.logrotate /etc/logrotate.d/temboard-agent
@@ -226,20 +235,30 @@ key=$(od -vN 16 -An -tx1 /dev/urandom | tr -d ' \n')
 logfile=${LOGDIR}/${name//\//-}.log
 
 # Inject autoconfiguration in dedicated file.
-generate_configuration $home "${sslfiles[@]}" $key $name $logfile $collector_url | tee ${ETCDIR}/${name}/temboard-agent.conf.d/auto.conf
+conf=${ETCDIR}/${name}/temboard-agent.conf.d/auto.conf
+log "Saving auto-configuration in $conf"
+generate_configuration $home "${sslfiles[@]}" $key $name $logfile $collector_url | tee $conf
 
 # systemd
 if [ -x /bin/systemctl ] ; then
-	unit=temboard-agent@${name//\//-}.service
-	systemctl enable $unit
+	unit="temboard-agent@$(systemd-escape ${name}).service"
 	log "Enabling systemd unit ${unit}."
+	if [ "${SYSUSER}" != "postgres" ] ; then
+		mkdir -p /etc/systemd/system/${unit}.d/
+		cat > /etc/systemd/system/${unit}.d/user.conf <<-EOF
+		[Service]
+		User=${SYSUSER}
+		Group=${SYSGROUP}
+		EOF
+	fi
+	systemctl enable $unit
 	start_cmd="systemctl start $unit"
 else
-	start_cmd="sudo -u ${PGUSER} temboard-agent -c ${ETCDIR}/${name}/temboard-agent.conf"
+	start_cmd="sudo -u ${SYSUSER} temboard-agent -c ${ETCDIR}/${name}/temboard-agent.conf"
 fi
 
 log
-log "Success. You can now start temboard--agent using:"
+log "Success. You can now start temboard-agent using:"
 log
 log "    ${start_cmd}"
 log

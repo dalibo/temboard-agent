@@ -27,8 +27,8 @@ if [ $EUID = 0 ] ; then
 	# Create docker group matching docker socket ownership.
 	DOCKER_GID=$(stat -c "%g" /var/run/docker.sock)
 	if ! getent group ${DOCKER_GID} &>/dev/null ; then
-		groupadd --system --gid ${DOCKER_GID} docker
-		adduser postgres docker
+		groupadd --system --gid ${DOCKER_GID} docker-host
+		adduser postgres docker-host
 	fi
 
 	# And reexec myself as postgres.
@@ -49,8 +49,8 @@ TEMBOARD_UI_URL=${TEMBOARD_UI_URL-}
 export TEMBOARD_UI_USER=${TEMBOARD_UI_USER-admin}
 export TEMBOARD_UI_PASSWORD=${TEMBOARD_UI_PASSWORD-admin}
 
-COMPOSE_PROJECT=$(docker inspect --format "{{ index .Config.Labels \"com.docker.compose.project\"}}" $HOSTNAME)
-links=($(docker inspect --format '{{ $net := index .NetworkSettings.Networks "'"${COMPOSE_PROJECT}_default"'" }}{{range $net.Links }}{{.}} {{end}}' $HOSTNAME))
+network=$(docker inspect --format '{{ .HostConfig.NetworkMode }}' $HOSTNAME)
+links=($(docker inspect --format '{{ $net := index .NetworkSettings.Networks "'"${network}"'" }}{{range $net.Links }}{{.}} {{end}}' $HOSTNAME))
 links=(${links[@]%%:${TEMBOARD_HOSTNAME}})
 PGCONTAINER=${links[@]%%*:*}
 COMPOSE_SERVICE=$(docker inspect --format "{{ index .Config.Labels \"com.docker.compose.service\"}}" $HOSTNAME)

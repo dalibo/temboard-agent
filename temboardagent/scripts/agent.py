@@ -14,12 +14,12 @@ from ..toolkit.configuration import OptionSpec
 from ..daemon import daemonize
 from ..httpd import HTTPDService
 from ..routing import Router
-from ..queue import purge_queue_dir
 from ..toolkit import validators as v
 from ..toolkit.app import define_core_arguments
 from ..toolkit.proctitle import ProcTitleManager
 from ..toolkit.services import ServicesManager
-
+from ..toolkit.tasklist.sqlite3_engine import TaskListSQLite3Engine
+from ..notification import NotificationMgmt
 
 logger = logging.getLogger('temboardagent.scripts.agent')
 
@@ -66,6 +66,12 @@ def list_options_specs():
 class AgentApplication(Application):
     PROGRAM = "temboard-agent"
 
+    def bootstrap_plugins(self):
+        for plugin_name, plugin in self.plugins.items():
+            if hasattr(plugin, 'bootstrap'):
+                logger.debug("Boostraping plugin %s", plugin_name)
+                plugin.bootstrap()
+
     def main(self, argv, environ):
         parser = ArgumentParser(
             prog='temboard-agent',
@@ -96,6 +102,13 @@ class AgentApplication(Application):
         self.bootstrap(args=args, environ=environ)
         config = self.config
 
+        # TaskList engine setup must be done before we load the plugins
+        self.scheduler.task_list_engine = TaskListSQLite3Engine(
+            os.path.join(config.temboard['home'], 'agent_tasks.db')
+        )
+
+        self.apply_config()
+
         if config.postgresql.instance:
             setproctitle.prefix += config.postgresql.instance + ': '
 
@@ -110,12 +123,16 @@ class AgentApplication(Application):
         self.pid = os.getpid()
         self.user = getpass.getuser()
 
-        # Purge all data queues at start time excepting metrics &
-        # notifications.
-        purge_queue_dir(
-            config.temboard['home'],
-            ['metrics.q', 'notifications.q', 'notifications_last_10.q']
-        )
+        # Bootstraping plugins
+        self.bootstrap_plugins()
+        # Boostraping action logs table
+        NotificationMgmt.bootstrap(config)
+
+        # Purge all legacy data queues
+        home = config.temboard['home']
+        if os.path.exists(home):
+            [os.remove(os.path.join(home, f))
+             for f in os.listdir(home) if f.endswith('.q')]
 
         services = ServicesManager()
         services.add(self.worker_pool)
