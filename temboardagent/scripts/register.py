@@ -72,11 +72,13 @@ def define_arguments(parser):
         '-h', '--host',
         dest='temboard_address',
         help="Agent address. Default: %(default)s",
+        default="127.0.0.1",
     )
     parser.add_argument(
         '-p', '--port',
         dest='temboard_port', type=int,
         help="Agent listening TCP port. Default: %(default)s",
+        default=2345,
     )
     parser.add_argument(
         '-g', '--groups',
