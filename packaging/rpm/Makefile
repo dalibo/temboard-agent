@@ -1,4 +1,4 @@
-TOPDIR=$(wildcard ../../dist/rpm)
+TOPDIR=../../dist/rpm
 YUM_LABS?=$(wildcard ../../../yum-labs)
 
 all:
