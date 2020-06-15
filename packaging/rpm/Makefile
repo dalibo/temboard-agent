@@ -5,11 +5,6 @@ all:
 	@make -sC $(YUM_LABS) clean
 	$(MAKE) build-centos7 build-centos6
 
-# Helper target to build and push altogether.
-centos7 centos6:
-	$(MAKE) build-$@
-	$(MAKE) push
-
 # Build RPM for either centos6 or centos7
 build-centos%:
 	@if rpm --eval centos%dist 2>/dev/null | grep -q centos$*; then \
