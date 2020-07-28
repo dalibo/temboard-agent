@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import logging
+from time import sleep
 
 from .postgres import Postgres
 from .toolkit.app import BaseApplication
@@ -66,4 +67,18 @@ class Application(BaseApplication):
 
     def apply_config(self):
         self.postgres = Postgres(**self.config.postgresql)
+        check_connectivity(self.postgres)
         return super(Application, self).apply_config()
+
+
+def check_connectivity(engine):
+    for i in range(10):
+        try:
+            with engine.connect():
+                break
+        except Exception as e:
+            if i == 9:
+                raise
+            logger.warn(e)
+            logger.info("Retrying in %ss.", i)
+            sleep(i)
