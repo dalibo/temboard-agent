@@ -30,7 +30,7 @@ With Docker & Compose, you can run your code like this:
 
    $ docker-compose up -d
    $ docker-compose exec agent bash
-   # pip install -e /usr/local/src/temboard-agent/ psycopg2-binary
+   # pip install -e /usr/local/src/temboard-agent/ psycopg2-binary hupper
    # sudo -u postgres temboard-agent
 
 Goto https://0.0.0.0:8888/ to add your instance with address ``agent``, port
@@ -40,6 +40,12 @@ That's it !
 
 The ``make shell`` target is a shorthand to ``docker-compose exec agent bash``
 if you prefer.
+
+Use code auto-reloading with the following command:
+
+.. code-block:: console
+
+   # sudo -u postgres hupper -m temboardagent.scripts.agent --debug
 
 
 Editing Documentation
