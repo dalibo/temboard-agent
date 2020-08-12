@@ -252,18 +252,13 @@ def post_settings(conn, config, http_context):
                         if item['vartype'] == u'enum':
                             # Enum handling.
                             if len(item['enumvals']) > 0:
-                                enumvals = [
-                                    re.sub(r"^[\"\'](.+)[\"\ ']$",
-                                           r"\1", enumval)
-                                    for enumval
-                                    in item['enumvals'][1:-1].split(',')]
                                 if ((setting['setting'].startswith("'") and
                                      setting['setting'].endswith("'")) or
                                     (setting['setting'].startswith('"') and
                                      setting['setting'].endswith('"'))):
                                     setting['setting'] = \
                                         setting['setting'][1:-1]
-                                if setting['setting'] not in enumvals:
+                                if setting['setting'] not in item['enumvals']:
                                     raise HTTPError(
                                         406,
                                         'Invalid setting: %s.' %
