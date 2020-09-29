@@ -1,4 +1,4 @@
-TOPDIR=$(wildcard ../../dist/rpm)
+TOPDIR=$(wildcard ../..)/dist/rpm
 YUM_LABS?=$(wildcard ../../../yum-labs)
 
 all:
@@ -8,7 +8,7 @@ all:
 # Helper target to build and push altogether.
 centos8 centos7:
 	$(MAKE) build-$@
-	$(MAKE) push-$@
+	$(MAKE) push
 
 # Build RPM for either centos7 or centos8
 build-centos%:
