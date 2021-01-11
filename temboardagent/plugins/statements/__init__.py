@@ -15,6 +15,9 @@ query = """\
 SELECT
   rolname,
   datname,
+  convert_from(
+    pgss.query::bytea, pg_catalog.pg_encoding_to_char(pg_database.encoding)
+  ) as query,
   pgss.*
 FROM pg_stat_statements pgss
 JOIN pg_authid ON pgss.userid = pg_authid.oid
