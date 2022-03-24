@@ -1,0 +1,17 @@
+version: "2.1"
+
+workflows:
+  version: 2
+  dumb-workflow-because-circleci-app-cant-skip-a-branch:
+    jobs:
+    - do-not-execute:
+        filters:
+          branches:
+            only: if-you-create-a-branch-with-this-name-it-will-fail
+
+jobs:
+  do-not-execute:
+    docker: [{image: debian:latest}]
+    steps:
+    - run: |
+        false
