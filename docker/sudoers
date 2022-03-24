@@ -1,3 +1,0 @@
-# Edit with /usr/sbin/visudo -sf
-Defaults !env_reset
-Defaults always_set_home
