@@ -130,14 +130,15 @@ def which(prog, search_path=None):
 def check_fqdn(name):
     """
     Check if a hostname is fully qualified, it must only contain
-    letters, - and have dots.
+    letters, - .
+    We now allow hostname without dot.
     """
-    # StackOverflow #11809631
-    if re.match(r'(?=^.{4,253}$)(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+[a-zA-Z]'  # noqa W605
-                r'{2,63}\.?$)', name):
-        return True
-    else:
-        return False
+    return re.match(
+        r"(?=^.{4,253}$)"  # check length between 4 and 253
+        r"(^((?!-)[a-zA-Z0-9-]{1,63}(?<!-))"
+        r"(\.(?!-)[a-zA-Z0-9-]{1,63}(?<!-))*$)",
+        name,
+    )
 
 
 def now():
