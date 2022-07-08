@@ -33,6 +33,8 @@ class SysInfo(Inventory):
                 raise Exception("Unsupported OS.")
         if not check_fqdn(hostname):
             raise ValueError("Invalid FQDN: %s" % (hostname))
+        if '.' not in hostname:
+            logger.warning("Hostname %s is not a FQDN.", hostname)
         return hostname
 
     def uname(self):
